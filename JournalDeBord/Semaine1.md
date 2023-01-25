@@ -8,6 +8,9 @@ Installation et apprentissage des concepts fondamentaux de Rust avec les ressour
 #### 2h
 Début du développement du render de couleurs avec un format PPM comme présenté dans le projet RayTracing in one weekend. Ajout d'un package Rust pour gérer les vecteurs 3d et intégration de cargo le package manager Rust dans mon projet.
 
+#### 0.5h
+Ajout du module Ray pour le fondement du raytracing et ajout d'une "skybox" comme fond sur lequel construire les objets qui seront observés.
+
 ### Références
 
 https://raytracing.github.io/books/RayTracingInOneWeekend.html Tutoriel d'implémentation de Raytracing en C++.
