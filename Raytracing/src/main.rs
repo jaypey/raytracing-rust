@@ -43,12 +43,24 @@ fn main() {
     eprintln!("Processing done");
 }
 
+fn hit_sphere(center: &Vector3<f32>, radius: f32, ray: &Ray) -> bool{
+    let center_origin: Vector3<f32> = ray.origin() - center;
+    let a = ray.direction().dot(&ray.direction());
+    let b = 2.0 * center_origin.dot(&ray.direction());
+    let c = center_origin.dot(&center_origin) - radius*radius;
+    let unknown = b*b - 4.0*a*c;
+    unknown > 0.0
+}
+
 fn write_colorpixel(c: Color) {
     print!("{0} {1} {2}\n", (255.999 * c[0]) as i32, (255.999 * c[1]) as i32, (255.999 * c[2]) as i32);
 }
 
 fn ray_color(r: &Ray) -> Color{
+    if hit_sphere(&Vector3::<f32>::new(0.0, 0.0, -1.0), 0.5, r){
+        return Color::new(0.0,1.0,0.0);
+    }
     let vec_unit:Vector3<f32> = r.direction().normalize();
     let t = 0.5*(vec_unit[1] + 1.0);
     (1.0 - t) * Color::new(1.0, 1.0, 1.0) + t * Color::new(0.5, 0.7, 1.0)
-}
+}   
