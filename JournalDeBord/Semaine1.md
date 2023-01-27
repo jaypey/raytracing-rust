@@ -13,6 +13,12 @@ Ajout du module Ray pour le fondement du raytracing et ajout d'une "skybox" comm
 
 Raytracing du premier objet (un cercle vert). La couleur retournée est basée sur la position du rayon dans la projection. Si elle touche un objet vert (dans ce cas-ci) la couleur rendu sera verte.
 
+#### 4h
+Ajout de plusieurs objets dans le render raytraced par l'abstraction de l'interaction avec les rayons de couleurs. Les objets hérite désormais d'un trait Hittable qui permet d'implémenter leur propre géométrie (et éventuellement leur propre valeur de réflexion). Ajout d'un système pour changer la couleur basé sur les normales d'un objet par rapport au rayon envoyé. J'ai passé beaucoup de temps également à découvrir le langage Rust, car puisque ma principale ressource pour le développement est entièrement en C++ je dois trouver des alternatives et gérer les différences de langage.
+
+#### 3h
+Ajout d'un matériau qui diffuse les rayons(donne un aspect matte). Ajout de l'antialiasing avec le calcul de densité de rayon et de leur couleur.
+
 ### Références
 
 https://raytracing.github.io/books/RayTracingInOneWeekend.html Tutoriel d'implémentation de Raytracing en C++.
