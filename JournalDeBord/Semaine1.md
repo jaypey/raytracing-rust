@@ -19,8 +19,24 @@ Ajout de plusieurs objets dans le render raytraced par l'abstraction de l'intera
 #### 3h
 Ajout d'un matériau qui diffuse les rayons(donne un aspect matte). Ajout de l'antialiasing avec le calcul de densité de rayon et de leur couleur.
 
+
+#### 2h
+Ajout d'une manière alternative pour effectuer la diffusion à partir d'une surface. Recherche sur les concepts de diffusion en ligne.
+
+<hr/>
+#### ~15h
+
+### Connaissances acquises
+Durant cette première semaine, j'ai énormément appris sur le langage Rust. Puisque ma ressource principale pour le Raytracing est en C++, je suis en mesure d'apprendre le nouveau langage en faisant des liens et des correspondances entre C++ et Rust. Le langage Rust n'étant pas principalement orienté objet, j'ai pu apprendre les manières alternatives pour obtenir des résultats identiques avec une technique différente( les traits, impl et mod). Pour le Raytracing, j'ai acquis beaucoup d'information sur le fonctionnement par vecteur des rayons. L'antialiasing est également un aspect du render graphique que j'ai eu la chance de comprendre (la couleur selon la densité de rayons). 
+
 ### Références
 
 https://raytracing.github.io/books/RayTracingInOneWeekend.html Tutoriel d'implémentation de Raytracing en C++.
 
 https://doc.rust-lang.org/stable/rust-by-example/ Rust by Example pour apprendre les fonctionnalités du langage.
+
+https://docs.rs/nalgebra/0.8.2/nalgebra/ Crate pour Rust qui permet l'utilisation de Vector3 avec les transformations vectorielles associées.
+
+https://doc.rust-lang.org/book/ch10-02-traits.html Documentation sur les traits en Rust
+
+https://www.youtube.com/watch?v=8QmPpf4k34E Antialiasing en Rust

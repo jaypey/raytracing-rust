@@ -82,7 +82,7 @@ fn ray_color(r: &Ray, world: &dyn Hittable, depth: i32) -> Color{
 
     let mut rec= HitRecord { p: Vector3::new(0.0,0.0,0.0), normal: Vector3::new(0.0,0.0,0.0), t: 0.0, front_face: false };
     if(world.hit(r, 0.001, f32::MAX, &mut rec)){
-        let target = rec.p + rec.normal + random_in_unit_sphere().normalize();
+        let target = rec.p + random_in_hemisphere(&rec.normal);
         return 0.5*ray_color(&Ray::new(rec.p, target - rec.p), world, depth-1);
     }
 
@@ -91,4 +91,13 @@ fn ray_color(r: &Ray, world: &dyn Hittable, depth: i32) -> Color{
     (1.0-t)*Color::new(1.0, 1.0, 1.0) + Color::new(0.5, 0.7, 1.0) * t
 
     
-}   
+}
+
+fn random_in_hemisphere(normal: &Vector3<f32>) -> Vector3<f32>{
+    let in_unit_sphere:Vector3<f32> = random_in_unit_sphere();
+    if in_unit_sphere.dot(&normal) > 0.0 {
+        return in_unit_sphere;
+    }
+
+    -in_unit_sphere
+}
