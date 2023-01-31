@@ -2,10 +2,16 @@ mod ray;
 mod sphere;
 mod hittable;
 mod camera;
+mod material;
+mod lambertian;
+mod metal;
 
 use hittable::HitRecord;
+use lambertian::Lambertian;
+use material::Material;
 use nalgebra::{Vector3};
 use rand::Rng;
+use crate::metal::Metal;
 use crate::ray::Ray;
 use crate::hittable::{Hittable, HittableList};
 use crate::sphere::Sphere;
@@ -41,8 +47,9 @@ fn main() {
 
     //Monde raytraced
     let world = HittableList::new(vec![
-        Box::new(Sphere::new(Vector3::new(0.0,0.0,-1.0),0.5)),
-        Box::new(Sphere::new(Vector3::new(0.0, -100.5, -1.0),100.0))
+        Box::new(Sphere::new(Vector3::new(0.0, 0.0, -1.0), 0.5, Lambertian::new(Vector3::new(0.1, 0.2, 0.5)))),
+        Box::new(Sphere::new(Vector3::new(0.0, -100.5, -1.0), 100.0, Lambertian::new(Vector3::new(0.8, 0.8, 0.0)))),
+        Box::new(Sphere::new(Vector3::new(1.0, 0.0, -1.0), 0.5, Metal::new(Vector3::new(0.8, 0.6, 0.2), 0.0)))
     ]);
     let cam = Camera::new();
     //Rendering colors
@@ -80,10 +87,13 @@ fn ray_color(r: &Ray, world: &dyn Hittable, depth: i32) -> Color{
         return Color::new(0.0, 0.0, 0.0);
     }
 
-    let mut rec= HitRecord { p: Vector3::new(0.0,0.0,0.0), normal: Vector3::new(0.0,0.0,0.0), t: 0.0, front_face: false };
+    let mut rec= HitRecord { p: Vector3::new(0.0,0.0,0.0), normal: Vector3::new(0.0,0.0,0.0), t: 0.0, front_face: false, material: &Lambertian::new(Vector3::new(0.0,0.0, 0.0))};
+
     if(world.hit(r, 0.001, f32::MAX, &mut rec)){
-        let target = rec.p + random_in_hemisphere(&rec.normal);
-        return 0.5*ray_color(&Ray::new(rec.p, target - rec.p), world, depth-1);
+        if let Some((scattered, attenuation)) = rec.material.scatter(&r, &rec){
+            return attenuation.component_mul(&ray_color(&scattered, world, depth-1));
+        }
+        return Color::new(0.0,0.0,0.0);
     }
 
     let u_direction = r.direction().normalize();
