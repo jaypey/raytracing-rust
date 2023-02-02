@@ -14,32 +14,29 @@ impl<M: Material> Sphere<M>{
 }
 
 impl<M: Material> Hittable for Sphere<M>{
-    fn hit<'a>(&'a self, r: &Ray, t_min: f32, t_max: f32, rec: & mut HitRecord<'a>) -> bool{
+    fn hit(& self, r: &Ray, t_min: f32, t_max: f32) -> Option<HitRecord>{
         let center_origin = r.origin() - self.center;
-        let a = r.direction().magnitude_squared();
+        let a = r.direction().dot(&r.direction());
         let half_b = center_origin.dot(&r.direction());
-        let c = center_origin.magnitude_squared() - self.radius * self.radius;
+        let c = center_origin.dot(&center_origin) - self.radius.powi(2);
 
         let unknown = half_b*half_b-a*c;
-        if unknown < 0.0{
-            return false;  
-        }
-        let sqrt = f32::sqrt(unknown);
-
-        let mut root = (-half_b - sqrt)/a;
-        if root < t_min || t_max < root{
-            root = (-half_b + sqrt)/a;
-            if root < t_min || t_max < root{
-                return false;
+        if unknown > 0.0 {
+            let sqrt_discriminant = unknown.sqrt();
+            let t = (-half_b - sqrt_discriminant) / a;
+            if t < t_max && t > t_min {
+                let p = r.point_at(t);
+                let normal = (p - self.center) / self.radius;
+                return Some(HitRecord { t, p, normal, material: &self.material })
+            }
+            let t = (-half_b + sqrt_discriminant) / a;
+            if t < t_max && t > t_min {
+                let p = r.point_at(t);
+                let normal = (p - self.center) / self.radius;
+                return Some(HitRecord { t, p, normal, material: &self.material })
             }
         }
-
-        rec.t = root;
-        rec.p = r.point_at(rec.t);
-        let o_normal = (rec.p - self.center) / self.radius;
-        rec.set_face_normal(r, o_normal);
-        rec.material = &self.material;
-        true
+        None
     }
 }
 

@@ -5,6 +5,7 @@ mod camera;
 mod material;
 mod lambertian;
 mod metal;
+mod dielectric;
 
 use hittable::HitRecord;
 use lambertian::Lambertian;
@@ -16,8 +17,37 @@ use crate::ray::Ray;
 use crate::hittable::{Hittable, HittableList};
 use crate::sphere::Sphere;
 use crate::camera::Camera;
+use crate::dielectric::Dielectric;
 
 type Color = Vector3<f32>;
+
+fn main_scene() -> HittableList {
+    let mut rng = rand::thread_rng();
+    let origin = Vector3::new(4.0, 0.2, 0.0);
+    let mut world = HittableList::default();
+    world.push(Sphere::new(Vector3::new(0.0, -1000.0,0.0), 1000.0, Lambertian::new(Vector3::new(0.5,0.5,0.5))));
+    for x in -11..11{
+        for y in -11..11 {
+            let rand_material = rng.gen::<f32>();
+            let center = Vector3::new(x as f32 + 0.9 * rng.gen::<f32>(), 0.2, y as f32 + 0.9 * rng.gen::<f32>());
+            if (center - origin).magnitude() > 0.9 {
+                if rand_material < 0.8{
+                    world.push(Sphere::new(center, 0.2, Lambertian::new(Vector3::new(rng.gen::<f32>()*rng.gen::<f32>(), rng.gen::<f32>()*rng.gen::<f32>(), rng.gen::<f32>()*rng.gen::<f32>()))));
+                } else if rand_material < 0.95 {
+                    world.push(Sphere::new(center, 0.2, Metal::new(Vector3::new(0.5 * (1.0 + rng.gen::<f32>()), 0.5 * (1.0 + rng.gen::<f32>()), 0.5 * (1.0 + rng.gen::<f32>())), 0.5 * rng.gen::<f32>())));
+                }
+                else{
+                    world.push( Sphere::new(center, 0.2, Dielectric::new(1.5)));
+                }
+            }
+        }
+    }
+
+    world.push(Sphere::new(Vector3::new(0.0, 1.0, 0.0), 1.0, Dielectric::new(1.5)));
+    world.push(Sphere::new(Vector3::new(-4.0, 1.0, 0.0), 1.0, Lambertian::new(Vector3::new(0.4, 0.2, 0.1))));
+    world.push(Sphere::new(Vector3::new(4.0, 1.0, 0.0), 1.0, Metal::new(Vector3::new(0.7, 0.6, 0.5), 0.0)));
+    world
+}
 
 
 fn random_in_unit_sphere() -> Vector3<f32> {
@@ -42,29 +72,26 @@ fn main() {
     let aspect_ratio = 16.0/9.0;
     let img_height = (img_width as f32 / aspect_ratio) as i32;
     let samples_per_pixel = 100;
-    let max_depth = 50;
 
 
     //Monde raytraced
-    let world = HittableList::new(vec![
-        Box::new(Sphere::new(Vector3::new(0.0, 0.0, -1.0), 0.5, Lambertian::new(Vector3::new(0.1, 0.2, 0.5)))),
-        Box::new(Sphere::new(Vector3::new(0.0, -100.5, -1.0), 100.0, Lambertian::new(Vector3::new(0.8, 0.8, 0.0)))),
-        Box::new(Sphere::new(Vector3::new(1.0, 0.0, -1.0), 0.5, Metal::new(Vector3::new(0.8, 0.6, 0.2), 0.0)))
-    ]);
-    let cam = Camera::new();
+    let world = main_scene();
+    let cam = Camera::new(Vector3::new(13.0,2.0,3.0), Vector3::new(0.0,0.0, 0.0), Vector3::new(0.0,1.0,0.0),20.0, 16.0/9.0, 0.0, 10.0);
     //Rendering colors
     print!("P3\n{0} {1}\n255\n", img_width, img_height);
 
     //Todo: Multi-thread
     for j in (0..img_height).rev() {
+        eprint! ("\x1B[2J\x1B[1;1H");
+        eprintln!("{0}/{1} Processing", j, img_height);
         for i in 0..img_width {
             let mut pixel_color = Color::new(0.0,0.0,0.0);
+
             for _ in 0..samples_per_pixel{
-                
-                    let u = (i as f32 + rng.gen::<f32>()) / (img_width-1) as f32;
-                    let v = (j as f32 + rng.gen::<f32>()) / (img_height-1) as f32;
+                    let u = (i as f32 + rng.gen::<f32>()) / img_width as f32;
+                    let v = (j as f32 + rng.gen::<f32>()) / img_height as f32;
                     let ray = cam.get_ray(u, v);
-                    pixel_color += ray_color(&ray, &world, max_depth);
+                    pixel_color += ray_color(&ray, &world, 0);
             }
             pixel_color /= samples_per_pixel as f32;
             for c in pixel_color.iter_mut() { *c = c.sqrt(); }
@@ -77,30 +104,24 @@ fn main() {
     eprintln!("Processing done");
 }
 
+
 fn write_colorpixel(ir: i32, ig: i32, ib: i32) {
     print!("{0} {1} {2}\n", ir, ig, ib);
 }
 
-fn ray_color(r: &Ray, world: &dyn Hittable, depth: i32) -> Color{
-
-    if depth <= 0 {
-        return Color::new(0.0, 0.0, 0.0);
-    }
-
-    let mut rec= HitRecord { p: Vector3::new(0.0,0.0,0.0), normal: Vector3::new(0.0,0.0,0.0), t: 0.0, front_face: false, material: &Lambertian::new(Vector3::new(0.0,0.0, 0.0))};
-
-    if(world.hit(r, 0.001, f32::MAX, &mut rec)){
-        if let Some((scattered, attenuation)) = rec.material.scatter(&r, &rec){
-            return attenuation.component_mul(&ray_color(&scattered, world, depth-1));
+fn ray_color(r: &Ray, world: &HittableList, depth: i32) -> Color{
+    if let Some(hit) = world.hit(r, 0.001, f32::MAX) {
+        if depth < 50 {
+            if let Some((scattered, attenuation)) = hit.material.scatter(&r, &hit) {
+                return attenuation.zip_map(&ray_color(&scattered, &world, depth+1), |l, r| l * r);
+            }
         }
-        return Color::new(0.0,0.0,0.0);
+        Color::new(0.0, 0.0, 0.0)
+    } else {
+        let unit_direction = r.direction().normalize();
+        let t = 0.5 * (unit_direction[1] + 1.0);
+        (1.0 - t) * Vector3::new(1.0, 1.0, 1.0) + t * Vector3::new(0.5, 0.7, 1.0)
     }
-
-    let u_direction = r.direction().normalize();
-    let t = 0.5 * (u_direction[1] + 1.0);
-    (1.0-t)*Color::new(1.0, 1.0, 1.0) + Color::new(0.5, 0.7, 1.0) * t
-
-    
 }
 
 fn random_in_hemisphere(normal: &Vector3<f32>) -> Vector3<f32>{

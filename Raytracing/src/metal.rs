@@ -6,18 +6,6 @@ fn reflect(v: &Vector3<f32>, n: &Vector3<f32>) -> Vector3<f32> {
     v - 2.0 * v.dot(&n) * n
 }
 
-fn refract(v: &Vector3<f32>, n: &Vector3<f32>,  ni_nt: f32) -> Option<Vector3<f32>> {
-    let uv = v.normalize();
-    let dt = uv.dot(&n);
-    let discriminant = 1.0 - ni_nt.powi(2) * (1.0 - dt.powi(2));
-    if discriminant > 0.0{
-        let refracted = ni_nt * (uv - n * dt) - n * discriminant.sqrt();
-        Some(refracted)
-    }else{
-        None
-    }
-}
-
 pub struct Metal{
     albedo: Vector3<f32>,
     fuzz: f32
