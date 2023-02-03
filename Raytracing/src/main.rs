@@ -7,6 +7,9 @@ mod lambertian;
 mod metal;
 mod dielectric;
 
+
+use std::thread::{self, JoinHandle};
+
 use hittable::HitRecord;
 use lambertian::Lambertian;
 use material::Material;
@@ -18,8 +21,13 @@ use crate::hittable::{Hittable, HittableList};
 use crate::sphere::Sphere;
 use crate::camera::Camera;
 use crate::dielectric::Dielectric;
+use crossbeam::atomic::AtomicCell;
 
 type Color = Vector3<f32>;
+
+static ArrayBuffer: [[[i32; 400];225]; 3] = [[[0; 400];225]; 3];
+static A: AtomicCell<[[[i32; 400];225]; 3]> = AtomicCell::new(ArrayBuffer);
+    
 
 fn main_scene() -> HittableList {
     let mut rng = rand::thread_rng();
@@ -60,19 +68,55 @@ fn random_in_unit_sphere() -> Vector3<f32> {
         }
     }
 }
+
+fn trace(lowerbound: i32, upperbound: i32, samples_per_pixel:i32, img_width: i32, img_height: i32, world: &HittableList, cam: &Camera) {
+    let mut rng = rand::thread_rng();
+    let mut valueArray = A.load();
+
+    for j in (lowerbound..upperbound).rev() {
+
+        for i in 0..img_width {
+            let mut pixel_color = Color::new(0.0,0.0,0.0);
+            
+            for _ in 0..samples_per_pixel{
+                let u = (i as f32 + rng.gen::<f32>()) / img_width as f32;
+                let v = (j as f32 + rng.gen::<f32>()) / img_height as f32;
+                let ray = cam.get_ray(u, v);
+                pixel_color += ray_color(&ray, &world, 0);
+            }
+            pixel_color /= samples_per_pixel as f32;
+            for c in pixel_color.iter_mut() { *c = c.sqrt(); }
+
+
+
+            valueArray[i as usize][j as usize][0] = (255.99 * pixel_color[0]) as i32;
+            valueArray[i as usize][j as usize][1] = (255.99 * pixel_color[1]) as i32;
+            valueArray[i as usize][j as usize][2] = (255.99 * pixel_color[2]) as i32;
+
+
+            A.store(valueArray);
+            // let ir = (255.99 * pixel_color[0]) as i32;
+            // let ig = (255.99 * pixel_color[1]) as i32;
+            // let ib = (255.99 * pixel_color[2]) as i32;
+            // write_colorpixel(ir, ig, ib);
+        }
+    }
+}
+
 fn main() {
+    
 
     //Init random
-    let mut rng = rand::thread_rng();
 
 
-
+    
     //Image format
-    let img_width = 400;
+    let img_width:i32 = 400;
     let aspect_ratio = 16.0/9.0;
-    let img_height = (img_width as f32 / aspect_ratio) as i32;
+    let img_height: i32 = (img_width as f32 / aspect_ratio) as i32;
     let samples_per_pixel = 100;
-
+    
+    let mut threads:Vec<JoinHandle<()>> = Vec::new();
 
     //Monde raytraced
     let world = main_scene();
@@ -80,27 +124,21 @@ fn main() {
     //Rendering colors
     print!("P3\n{0} {1}\n255\n", img_width, img_height);
 
-    //Todo: Multi-thread
-    for j in (0..img_height).rev() {
-        eprint! ("\x1B[2J\x1B[1;1H");
-        eprintln!("{0}/{1} Processing", j, img_height);
-        for i in 0..img_width {
-            let mut pixel_color = Color::new(0.0,0.0,0.0);
+    let chunkSize = img_height/5;
 
-            for _ in 0..samples_per_pixel{
-                    let u = (i as f32 + rng.gen::<f32>()) / img_width as f32;
-                    let v = (j as f32 + rng.gen::<f32>()) / img_height as f32;
-                    let ray = cam.get_ray(u, v);
-                    pixel_color += ray_color(&ray, &world, 0);
-            }
-            pixel_color /= samples_per_pixel as f32;
-            for c in pixel_color.iter_mut() { *c = c.sqrt(); }
-            let ir = (255.99 * pixel_color[0]) as i32;
-            let ig = (255.99 * pixel_color[1]) as i32;
-            let ib = (255.99 * pixel_color[2]) as i32;
-            write_colorpixel(ir, ig, ib);
-        }
+    for i in 0..4 {
+        threads.push(thread::spawn(move || trace(chunkSize *i as i32, chunkSize*(i as i32 +1), samples_per_pixel, img_width, img_height, &[world], &[cam])));
     }
+
+    for i in threads.iter(){
+        i.join();
+    }
+
+
+
+
+    //Todo: Multi-thread
+
     eprintln!("Processing done");
 }
 

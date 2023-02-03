@@ -18,6 +18,9 @@ pub struct HittableList{
     list: Vec<Box<dyn Hittable>>
 }
 
+unsafe impl Send for HittableList {}
+
+unsafe impl Sync for HittableList {}
 
 
 impl HittableList{
