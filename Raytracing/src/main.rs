@@ -18,6 +18,7 @@ use crate::metal::Metal;
 use crate::ray::Ray;
 use crate::sphere::Sphere;
 use hittable::HitRecord;
+use image::ImageBuffer;
 use lambertian::Lambertian;
 use material::Material;
 use nalgebra::Vector3;
@@ -113,24 +114,53 @@ fn trace(
 ) {
     let mut rng = rand::thread_rng();
 
-    for j in (lowerbound..upperbound).rev() {
-        for i in 0..img_width {
-            let mut pixel_color = Color::new(0.0, 0.0, 0.0);
+    let num = num_cpus::get();
+    let mut tasks = Vec::new();
 
-            for _ in 0..samples_per_pixel {
-                let u = (i as f32 + rng.gen::<f32>()) / img_width as f32;
-                let v = (j as f32 + rng.gen::<f32>()) / img_height as f32;
-                let ray = cam.get_ray(u, v);
-                pixel_color += ray_color(&ray, &world, 0);
-            }
-            pixel_color /= samples_per_pixel as f32;
-            for c in pixel_color.iter_mut() {
-                *c = c.sqrt();
-            }
+    let rows_per_thread = (img_height as f32 / num as f32) as u32;
 
-            valueArray[i as usize][j as usize][0] = (255.99 * pixel_color[0]) as i32;
-            valueArray[i as usize][j as usize][1] = (255.99 * pixel_color[1]) as i32;
-            valueArray[i as usize][j as usize][2] = (255.99 * pixel_color[2]) as i32;
+    let arc_world = Arc::new(world);
+    let arc_image = Arc::new(Mutex::new(ImageBuffer::new(
+        img_width as u32,
+        img_height as u32,
+    )));
+
+    //Threads loop
+    for cpu in 0..num {
+        let thread_world = arc_world.clone();
+        let thread_img = arc_image.clone();
+
+        tasks.push(thread::spawn(move || {
+            let top = if cpu == num - 1 || (cpu as u32 + 1) * rows_per_thread > img_height as u32 {
+                img_height as u32
+            } else {
+                (cpu as u32 + 1) * rows_per_thread
+            };
+
+            let mut img_section = image::ImageBuffer::new(img_width as u32, img_height as u32);
+        }));
+    }
+
+    //Single thread
+
+    // for j in (lowerbound..upperbound).rev() {
+    //     for i in 0..img_width {
+    //         let mut pixel_color = Color::new(0.0, 0.0, 0.0);
+
+    //         for _ in 0..samples_per_pixel {
+    //             let u = (i as f32 + rng.gen::<f32>()) / img_width as f32;
+    //             let v = (j as f32 + rng.gen::<f32>()) / img_height as f32;
+    //             let ray = cam.get_ray(u, v);
+    //             pixel_color += ray_color(&ray, &world, 0);
+    //         }
+    //         pixel_color /= samples_per_pixel as f32;
+    //         for c in pixel_color.iter_mut() {
+    //             *c = c.sqrt();
+    //         }
+
+    //         valueArray[i as usize][j as usize][0] = (255.99 * pixel_color[0]) as i32;
+    //         valueArray[i as usize][j as usize][1] = (255.99 * pixel_color[1]) as i32;
+    //         valueArray[i as usize][j as usize][2] = (255.99 * pixel_color[2]) as i32;
 
             // let ir = (255.99 * pixel_color[0]) as i32;
             // let ig = (255.99 * pixel_color[1]) as i32;
