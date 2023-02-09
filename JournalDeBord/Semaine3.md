@@ -2,23 +2,21 @@
 
 ### Description du travail
 
-#### 2h
-
-Ajout de matériaux avec différents algorithme de réflection. Lambertian(mat) et métallique.
-
-![ExempleFinal](./images/exempleMateriau.png)
-
-#### 8.25 h
-
-Ajout de la fuzziness des objets métalliques, ajout de dielectrics (matériaux comme de la vitre ou de l'eau) et de la réfraction dans les objets. Changement de fonctionnement de la caméra pour qu'elle puisse changer de position, d'orientation et de field of view. Ajout de la profondeur de champ pour créer un effet de lentille. Création d'un render final avec les différentes sphères de matériaux différents pour observer les effets sur les rayons de couleurs.
-
-![ExempleFinal](./images/exempleFinal.png)
-
 #### 3.25h
 
-#### 2h
+Ajout et implémentation des attributs Copy et Clone pour permettre à certains objets de se copier avant d'être divisé entre les différents threads.
 
 #### 2h
+
+Changement de la manière pour le partage d'objet entre les threads. La méthode en implémentant les attributs Copy et Clone n'était pas optimale et ne fonctionnait pas bien. J'ai donc continuer de rechercher une manière plus optimale.
+
+#### 2h
+
+Utilisation d'une ressource qui utilise le multi-threading en Rust pour me permettre d'utiliser des manières optimales selon le langage avec les packages appropriés. (num_cpus, ImageBuffer, Arc)
+
+#### 3.15h
+
+Finalisation du multi-threading (fonctionnel), changement du fonctionnement de génération d'image en utilisant un package Rust image. Avec l'optimisation général, j'ai pu passé de 3h pour la génération d'une image de 400x225 avec un sampling de 100 par pixel à 3 minutes pour la génération d'une image de 1920x1080.
 
 <hr/>
 #### ~15h

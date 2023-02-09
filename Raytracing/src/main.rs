@@ -18,7 +18,7 @@ use crate::metal::Metal;
 use crate::ray::Ray;
 use crate::sphere::Sphere;
 use hittable::HitRecord;
-use image::ImageBuffer;
+use image::{GenericImageView, ImageBuffer, Rgb};
 use lambertian::Lambertian;
 use material::Material;
 use nalgebra::Vector3;
@@ -104,23 +104,19 @@ fn random_in_unit_sphere() -> Vector3<f32> {
 }
 
 fn trace(
-    lowerbound: i32,
-    upperbound: i32,
     samples_per_pixel: i32,
     img_width: i32,
     img_height: i32,
-    world: &HittableList,
-    cam: &Camera,
+    world: HittableList,
+    cam: Camera,
 ) {
-    let mut rng = rand::thread_rng();
-
-    let num = num_cpus::get();
+    let num = num_cpus::get() - 2;
     let mut tasks = Vec::new();
 
     let rows_per_thread = (img_height as f32 / num as f32) as u32;
 
     let arc_world = Arc::new(world);
-    let arc_image = Arc::new(Mutex::new(ImageBuffer::new(
+    let arc_image = Arc::new(Mutex::new(image::RgbImage::new(
         img_width as u32,
         img_height as u32,
     )));
@@ -131,55 +127,80 @@ fn trace(
         let thread_img = arc_image.clone();
 
         tasks.push(thread::spawn(move || {
+            let mut rng = rand::thread_rng();
+
             let top = if cpu == num - 1 || (cpu as u32 + 1) * rows_per_thread > img_height as u32 {
                 img_height as u32
             } else {
                 (cpu as u32 + 1) * rows_per_thread
             };
 
-            let mut img_section = image::ImageBuffer::new(img_width as u32, img_height as u32);
+            let mut img_section = image::RgbImage::new(img_width as u32, img_height as u32);
+
+            for j_inverse in (cpu as u32 * rows_per_thread)..top {
+                let j = img_height as u32 - j_inverse - 1;
+                for i in 0..img_width {
+                    let mut pixel_color = Color::new(0.0, 0.0, 0.0);
+
+                    for _ in 0..samples_per_pixel {
+                        let u = (i as f32 + rng.gen::<f32>()) / img_width as f32;
+                        let v = (j as f32 + rng.gen::<f32>()) / img_height as f32;
+                        let ray = cam.get_ray(u, v);
+                        pixel_color += ray_color(&ray, &*thread_world, 0);
+                    }
+                    pixel_color /= samples_per_pixel as f32;
+                    for c in pixel_color.iter_mut() {
+                        *c = c.sqrt();
+                    }
+
+                    img_section.put_pixel(
+                        i as u32,
+                        j_inverse - (cpu as u32 * rows_per_thread),
+                        image::Rgb {
+                            0: [
+                                (255.99 * pixel_color[0]) as u8,
+                                (255.99 * pixel_color[1]) as u8,
+                                (255.99 * pixel_color[2]) as u8,
+                            ],
+                        },
+                    )
+                }
+            }
+
+            let mut img_data = thread_img.lock().unwrap();
+
+            for i in 0..img_width {
+                for j_inverse in (cpu as u32 * rows_per_thread)..top {
+                    img_data.put_pixel(
+                        i as u32,
+                        j_inverse,
+                        *img_section
+                            .get_pixel(i as u32, j_inverse - (cpu as u32 * rows_per_thread)),
+                    );
+                }
+            }
         }));
     }
 
-    //Single thread
-
-    // for j in (lowerbound..upperbound).rev() {
-    //     for i in 0..img_width {
-    //         let mut pixel_color = Color::new(0.0, 0.0, 0.0);
-
-    //         for _ in 0..samples_per_pixel {
-    //             let u = (i as f32 + rng.gen::<f32>()) / img_width as f32;
-    //             let v = (j as f32 + rng.gen::<f32>()) / img_height as f32;
-    //             let ray = cam.get_ray(u, v);
-    //             pixel_color += ray_color(&ray, &world, 0);
-    //         }
-    //         pixel_color /= samples_per_pixel as f32;
-    //         for c in pixel_color.iter_mut() {
-    //             *c = c.sqrt();
-    //         }
-
-    //         valueArray[i as usize][j as usize][0] = (255.99 * pixel_color[0]) as i32;
-    //         valueArray[i as usize][j as usize][1] = (255.99 * pixel_color[1]) as i32;
-    //         valueArray[i as usize][j as usize][2] = (255.99 * pixel_color[2]) as i32;
-
-            // let ir = (255.99 * pixel_color[0]) as i32;
-            // let ig = (255.99 * pixel_color[1]) as i32;
-            // let ib = (255.99 * pixel_color[2]) as i32;
-            // write_colorpixel(ir, ig, ib);
-        }
+    for task in tasks {
+        let _ = task.join();
     }
+
+    let output_path = "output.png";
+
+    image::DynamicImage::ImageRgb8(arc_image.lock().unwrap().clone())
+        .save(output_path)
+        .unwrap();
 }
 
 fn main() {
     //Init random
 
     //Image format
-    let img_width: i32 = 400;
+    let img_width: i32 = 1920;
     let aspect_ratio = 16.0 / 9.0;
     let img_height: i32 = (img_width as f32 / aspect_ratio) as i32;
     let samples_per_pixel = 100;
-
-    let mut threads: Vec<JoinHandle<()>> = Vec::new();
 
     //Monde raytraced
     let world = main_scene();
@@ -195,33 +216,9 @@ fn main() {
     //Rendering colors
     print!("P3\n{0} {1}\n255\n", img_width, img_height);
 
-    let chunkSize = img_height / 5;
-
-    for i in 0..4 {
-        threads.push(thread::spawn(move || {
-            trace(
-                chunkSize * i as i32,
-                chunkSize * (i as i32 + 1),
-                samples_per_pixel,
-                img_width,
-                img_height,
-                &[world],
-                &[cam],
-            )
-        }));
-    }
-
-    for i in threads.iter() {
-        i.join();
-    }
-
-    //Todo: Multi-thread
+    trace(samples_per_pixel, img_width, img_height, world, cam);
 
     eprintln!("Processing done");
-}
-
-fn write_colorpixel(ir: i32, ig: i32, ib: i32) {
-    print!("{0} {1} {2}\n", ir, ig, ib);
 }
 
 fn ray_color(r: &Ray, world: &HittableList, depth: i32) -> Color {
