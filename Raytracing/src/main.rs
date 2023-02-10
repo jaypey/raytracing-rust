@@ -23,6 +23,7 @@ use lambertian::Lambertian;
 use material::Material;
 use nalgebra::Vector3;
 use rand::Rng;
+use std::time::Instant;
 
 type Color = Vector3<f32>;
 
@@ -169,6 +170,8 @@ fn trace(
 
             let mut img_data = thread_img.lock().unwrap();
 
+            println!("End of thread: {0}", cpu);
+
             for i in 0..img_width {
                 for j_inverse in (cpu as u32 * rows_per_thread)..top {
                     img_data.put_pixel(
@@ -194,10 +197,10 @@ fn trace(
 }
 
 fn main() {
-    //Init random
+    let startTime = Instant::now();
 
     //Image format
-    let img_width: i32 = 1920;
+    let img_width: i32 = 500;
     let aspect_ratio = 16.0 / 9.0;
     let img_height: i32 = (img_width as f32 / aspect_ratio) as i32;
     let samples_per_pixel = 100;
@@ -214,11 +217,12 @@ fn main() {
         10.0,
     );
     //Rendering colors
-    print!("P3\n{0} {1}\n255\n", img_width, img_height);
+    eprintln!("Starting rendering....");
 
     trace(samples_per_pixel, img_width, img_height, world, cam);
 
-    eprintln!("Processing done");
+    let elapsed = startTime.elapsed();
+    eprintln!("Processing done in : {:.2?}", elapsed);
 }
 
 fn ray_color(r: &Ray, world: &HittableList, depth: i32) -> Color {

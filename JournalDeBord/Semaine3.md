@@ -18,6 +18,10 @@ Utilisation d'une ressource qui utilise le multi-threading en Rust pour me perme
 
 Finalisation du multi-threading (fonctionnel), changement du fonctionnement de génération d'image en utilisant un package Rust image. Avec l'optimisation général, j'ai pu passé de 3h pour la génération d'une image de 400x225 avec un sampling de 100 par pixel à 3 minutes pour la génération d'une image de 1920x1080.
 
+#### 4.75h
+
+Ajout d'un benchmark pour connaître l'effet des optimisations avec la crate std::time.
+
 <hr/>
 #### ~15h
 
