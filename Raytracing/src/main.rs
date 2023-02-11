@@ -1,3 +1,5 @@
+mod aabb;
+mod bvh;
 mod camera;
 mod dielectric;
 mod hittable;
@@ -200,7 +202,7 @@ fn main() {
     let startTime = Instant::now();
 
     //Image format
-    let img_width: i32 = 500;
+    let img_width: i32 = 1920;
     let aspect_ratio = 16.0 / 9.0;
     let img_height: i32 = (img_width as f32 / aspect_ratio) as i32;
     let samples_per_pixel = 100;
@@ -213,7 +215,7 @@ fn main() {
         Vector3::new(0.0, 1.0, 0.0),
         20.0,
         16.0 / 9.0,
-        0.0,
+        0.1,
         10.0,
     );
     //Rendering colors
