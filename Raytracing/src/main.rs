@@ -90,7 +90,7 @@ fn main_scene() -> HittableList {
     world.push(Sphere::new(
         Vector3::new(4.0, 1.0, 0.0),
         1.0,
-        Metal::new(Vector3::new(0.7, 0.6, 0.5), 0.0),
+        Metal::new(Vector3::new(0.7, 0.8, 0.6), 0.1),
     ));
     world
 }
@@ -205,7 +205,7 @@ fn main() {
     let img_width: i32 = 1920;
     let aspect_ratio = 16.0 / 9.0;
     let img_height: i32 = (img_width as f32 / aspect_ratio) as i32;
-    let samples_per_pixel = 100;
+    let samples_per_pixel = 60;
 
     //Monde raytraced
     let world = main_scene();
