@@ -8,6 +8,7 @@ mod material;
 mod metal;
 mod ray;
 mod sphere;
+mod texture;
 
 extern crate num_cpus;
 use std::sync::{Arc, Mutex};
@@ -26,6 +27,7 @@ use material::Material;
 use nalgebra::Vector3;
 use rand::Rng;
 use std::time::Instant;
+use texture::{CheckerTexture, SolidColor};
 
 type Color = Vector3<f32>;
 
@@ -36,7 +38,10 @@ fn main_scene() -> HittableList {
     world.push(Sphere::new(
         Vector3::new(0.0, -1000.0, 0.0),
         1000.0,
-        Lambertian::new(Vector3::new(0.5, 0.5, 0.5)),
+        Lambertian::new(CheckerTexture::new(
+            SolidColor::new(0.0, 4.0, 1.0),
+            SolidColor::new(2.5, 2.5, 2.5),
+        )),
     ));
     for x in -11..11 {
         for y in -11..11 {
@@ -51,7 +56,7 @@ fn main_scene() -> HittableList {
                     world.push(Sphere::new(
                         center,
                         0.2,
-                        Lambertian::new(Vector3::new(
+                        Lambertian::new(SolidColor::new(
                             rng.gen::<f32>() * rng.gen::<f32>(),
                             rng.gen::<f32>() * rng.gen::<f32>(),
                             rng.gen::<f32>() * rng.gen::<f32>(),
@@ -85,7 +90,7 @@ fn main_scene() -> HittableList {
     world.push(Sphere::new(
         Vector3::new(-4.0, 1.0, 0.0),
         1.0,
-        Lambertian::new(Vector3::new(0.4, 0.2, 0.1)),
+        Lambertian::new(SolidColor::new(4.0, 2.0, 0.0)),
     ));
     world.push(Sphere::new(
         Vector3::new(4.0, 1.0, 0.0),

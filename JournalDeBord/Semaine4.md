@@ -14,6 +14,10 @@ Adaptation du BVH et tentative de résoudre les problèmes liés à l'ordering d
 
 Suite des changements aux BVH avec l'ajout de la fonction pour l'axis range.
 
+#### 4.25
+
+Finalisation de la méthode BVH (fonctionnel) et ajout du fonctionnement de textures pour les surfaces sphérique (checker).
+
 <hr/>
 #### ~15h
 
