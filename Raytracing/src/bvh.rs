@@ -119,6 +119,6 @@ impl Hittable for BVH {
     }
 
     fn bounding_box(&self, t0: f32, t1: f32) -> Option<AABB> {
-        Some(self.bbox)
+        Some(self.bbox.clone())
     }
 }

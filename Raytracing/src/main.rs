@@ -39,8 +39,8 @@ fn main_scene() -> HittableList {
         Vector3::new(0.0, -1000.0, 0.0),
         1000.0,
         Lambertian::new(CheckerTexture::new(
-            SolidColor::new(0.0, 4.0, 1.0),
-            SolidColor::new(2.5, 2.5, 2.5),
+            SolidColor::new(0.0, 0.4, 0.1),
+            SolidColor::new(1.0, 1.0, 01.0),
         )),
     ));
     for x in -11..11 {
