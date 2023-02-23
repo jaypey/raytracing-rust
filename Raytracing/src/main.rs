@@ -34,7 +34,9 @@ type Color = Vector3<f32>;
 fn main_scene() -> HittableList {
     let mut rng = rand::thread_rng();
     let origin = Vector3::new(4.0, 0.2, 0.0);
-    let mut world = HittableList::default();
+    let mut world = HittableList::default(); //Le world est en fait simplement une liste d'objets qui peuvent être atteint par des rayons.
+
+    //Dans cette liste, je push une sphere en indiquant son rayon, la position de son centre et le matériau
     world.push(Sphere::new(
         Vector3::new(0.0, -1000.0, 0.0),
         1000.0,
@@ -111,6 +113,7 @@ fn random_in_unit_sphere() -> Vector3<f32> {
     }
 }
 
+// Fonction principale qui effectue le raytracing
 fn trace(
     samples_per_pixel: i32,
     img_width: i32,
@@ -149,18 +152,21 @@ fn trace(
                 let j = img_height as u32 - j_inverse - 1;
                 for i in 0..img_width {
                     let mut pixel_color = Color::new(0.0, 0.0, 0.0);
-
+                    // Samples per pixel, est le nombre de rayon qui sera envoyé pour un pixel
                     for _ in 0..samples_per_pixel {
                         let u = (i as f32 + rng.gen::<f32>()) / img_width as f32;
                         let v = (j as f32 + rng.gen::<f32>()) / img_height as f32;
+                        //Va chercher la direction et la position du vecteur qui représente le rayon.
                         let ray = cam.get_ray(u, v);
                         pixel_color += ray_color(&ray, &*thread_world, 0);
                     }
+                    //Diviser la couleur par le nombre de pixels pour obtenir une couleur moyenne.
                     pixel_color /= samples_per_pixel as f32;
                     for c in pixel_color.iter_mut() {
                         *c = c.sqrt();
                     }
 
+                    //Ajouter le pixel à l'image
                     img_section.put_pixel(
                         i as u32,
                         j_inverse - (cpu as u32 * rows_per_thread),
@@ -232,10 +238,12 @@ fn main() {
     eprintln!("Processing done in : {:.2?}", elapsed);
 }
 
+//Retourne une couleur.
 fn ray_color(r: &Ray, world: &HittableList, depth: i32) -> Color {
     if let Some(hit) = world.hit(r, 0.001, f32::MAX) {
         if depth < 50 {
             if let Some((scattered, attenuation)) = hit.material.scatter(&r, &hit) {
+                //Fait rebondir les rayons de manière récursif en prenant en compte le matériau touché.
                 return attenuation
                     .zip_map(&ray_color(&scattered, &world, depth + 1), |l, r| l * r);
             }
